@@ -13,10 +13,21 @@
 extern "C" {
 #endif
 
-#define DSP_EN_1ST  { TRISCbits.TRISC4=0;  TRISCbits.TRISC5=0; PORTCbits.RC4 = 1; PORTCbits.RC5 = 0;}
-#define DSP_EN_2ND  { TRISCbits.TRISC4=0;  TRISCbits.TRISC5=0; PORTCbits.RC4 = 0; PORTCbits.RC5 = 1;}
+typedef enum
+{
+    #define SEG_CHAR_DEF(enum,segments)    enum,
+        #include "led_seg_def.h"
+    #undef SEG_CHAR_DEF
+    SEG_LAST,   ///< enum value which represents number of defined characters
+} SEG_CHAR_ID_DEF;
 
-extern unsigned char acDispContent[2];  ///< 2 byte array to store current display content
+#define DSP_EN_1ST  { PORTCbits.RC4 = 1; PORTCbits.RC5 = 0; PORTCbits.RC0 = 1; }
+#define DSP_EN_2ND  { PORTCbits.RC4 = 0; PORTCbits.RC5 = 1; PORTCbits.RC0 = 1; }
+#define DSP_EN_LED  { PORTCbits.RC4 = 1; PORTCbits.RC5 = 1; PORTCbits.RC0 = 0; }
+#define DSP_DISABLE { PORTCbits.RC4 = 1; PORTCbits.RC5 = 1; PORTCbits.RC0 = 1; }
+
+extern volatile SEG_CHAR_ID_DEF acDispContent[2];  ///< 2 byte array to store current display content
+
 extern const unsigned char acDigitToSegMap[];
 
 #ifdef	__cplusplus

@@ -7,40 +7,32 @@
 
 
 #include <xc.h>
-#include <htc.h>
-#define _XTAL_FREQ 4000000
 
 #include "conf_bits.h"
 #include "led_seg.h"
+#include "delay.h"
+#include "timer0_led_key.h"
+
+
 
 /**
- * Keys:
- * 
- *  [-]      [+]               [Turbo]
- *  
+ *                                   MCLR 01 #####   ##### 28 RB7 ICSP DAT ---> 7 seg
+ *            Hall Cover ----------> RA0  02 ############# 27 RB6 ICSP CLD ---> 7 seg & 2 color LED Anode
+ *            Hall 3 --------------> RA1  03 ############# 26 RB5 ------------> 7 seg
+ *            Hall 1 --------------> RA2  04 ############# 25 RB4 ------------> 7 seg
+ *            Hall 2 --------------> RA3  05 ############# 24 RB3 ------------> 7 seg & 2 color LED Anode
+ * Upper 3 keys (L when press) ----> RA4  06 ############# 23 RB2 ------------> 7 seg
+ *           Relay <---------------- RA5  07 ############# 22 RB1 ------------> 7 seg
+ *                               [-] Vss  08 ############# 21 RB0 INT <------- 0/5 V 50Hz cycle from mains (when absent - overheat)
+ *                           XT ---- RA7  09 ############# 20 Vdd [+]
+ *                           XT ---- RA6  10 ############# 19 Vss [-]
+ *        2 color LED common K  <--- RC0  11 ############# 18 RC7 ------------> 7 seg dot
+ *             Triac gate <--------- RC1  12 ############# 17 RC6
+ *             Enigne RPM ---------> RC2  13 ############# 16 RC5 ------------> 7 seg right display plus to Anode + [-] Key
+ * Lower 3 keys (L when press) ----> RC3  14 ############# 15 RC4 ------------> 7 seg left display plus to Anode + [+] Key
  *
- *  [PULSE]  [AUTOPULSE]        [ON/OFF]
+ * All hall sensors in idle gives 5V, when magnet is detected voltage drops to zero.
  *
- * One side of contact from all keys are connected to PLUS through resistors.
- * Second contacts from [-] and [+] keys are connected through ->|- diode to RC4 and RC5
- */
-
-/**
- *                                   MCLR 01 #####   ##### 28 RB7 ICSP DAT ---- 7 seg
- *                                   RA0  02 ############# 27 RB6 ICSP CLD ---- 7 seg
- *                                   RA1  03 ############# 26 RB5 ------------- 7 seg
- *                                   RA2  04 ############# 25 RB4 ------------- 7 seg
- *                                   RA3  05 ############# 24 RB3 ------------- 7 seg
- *                                   RA4  06 ############# 23 RB2 ------------- 7 seg
- *                                   RA5  07 ############# 22 RB1 ------------- 7 seg
- *                                   Vss  08 ############# 21 RB0 INT -------- 0/5 V 50Hz cycle from mains
- *                                   RA7  09 ############# 20 Vdd
- *                                   RA6  10 ############# 19 Vss
- *                                   RC0  11 ############# 18 RC7 ------------- 7 seg
- *                                   RC1  12 ############# 17 RC6
- *                                   RC2  13 ############# 16 RC5 ------------- 7 seg right display plus to Anode + [-] Key
- *                                   RC3  14 ############# 15 RC4 ------------- 7 seg left display plus to Anode + [+] Key
- 
  */
 
 
@@ -59,10 +51,14 @@ void interrupt myIsr(void)
         ucCounter++;
         INTCONbits.INTF = 0;
     }
+    T0_vIsr();
 }
 
 void main(void) {
-    TRISA = TRISB = TRISC = 1; // as inputs
+    TRISA = 0xFF; // as inputs
+    TRISB = 0; 
+    TRISC = 0xFF; // as inputs
+
     PORTA = PORTB = PORTC = 0; // low state
 
     ANSEL = ANSELH = 0; // configure analog as digital
@@ -73,28 +69,44 @@ void main(void) {
 //    OPTION_REGbits.INTEDG = 0; // EXT INT on falling edge
 //    INTCONbits.INTF = 0; // clear EXT INT flag
 //    INTCONbits.INTE = 1; // EXT INT enable
-//    INTCONbits.GIE = 1; // global interrupt enable flag
 
-    TRISB = 0b00000001; // RB as input
+    //                   76543210
+    TRISBbits.TRISB0 = 0b00000001; //RB7-RB1 as outpus; RB0 as input (EXT INT)
+    TRISCbits.TRISC4 = 0; // common anode first digit
+    TRISCbits.TRISC5 = 0; // common anode second digit
+    TRISCbits.TRISC0 = 0; // common anode bicolor LED
+    TRISCbits.TRISC7 = 0; // RC7 as output - decimal point
+
+    TRISCbits.TRISC3 = 1; //RC0 as input (key)
+    TRISAbits.TRISA4 = 1; //RA4 as input (key)
+    
     unsigned char ucI;
+
+    T0_vInit();
+    ei();   // global interrupt enable
+    
+    acDispContent[0] = SEG_E;
+    acDispContent[1] = SEG_R;
+    delay_ms(3000);
     
     while (1)
     {
-        DSP_EN_1ST
-        DSP_EN_2ND
-        PORTB = 0;
-        __delay_ms(3000);
 
-        for (ucI=0; ucI<12; ucI++)
-        {
-            DSP_EN_1ST
-            __delay_ms(500);
-            //_delay(100000);
-            DSP_EN_2ND
-            __delay_ms(500);
-            //_delay(100000);
-            PORTB = acDigitToSegMap[ucI];
-        }
+        acDispContent[0] = SEG_P;
+        acDispContent[1] = SEG_A;
+        delay_ms(250);
+        acDispContent[0] = (PORTA & 0xF0) >> 8;
+        acDispContent[1] = (PORTA & 0x0F);
+        delay_ms(500);
+
+
+        acDispContent[0] = SEG_P;
+        acDispContent[1] = SEG_C;
+        delay_ms(250);
+        acDispContent[0] = (PORTC & 0xF0) >> 8;
+        acDispContent[1] = (PORTC & 0x0F);
+        delay_ms(500);
+
     }
     
     while (1)
@@ -102,7 +114,7 @@ void main(void) {
         if (ucZC) // if zero crossing detected
         {
             PORTCbits.RC0 = 1;
-            __delay_ms(1);
+            delay_ms(1);
             PORTCbits.RC0 = 0;
             ucZC = 0;
         }
