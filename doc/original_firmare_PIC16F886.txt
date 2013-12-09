@@ -1,0 +1,26 @@
+User ID:
+ 0x2000	00
+ 0x2001 07
+ 0x2002 00
+ 0x2003 08
+ 
+Device ID:
+ 0x2006 2060
+ 
+Config Memory:
+ 0x2007 CONFIG1 0x23A9
+					FOSC XT		Crystal resonator
+					WDTE ON
+					PWRTE ON
+					MCLRE ON	MCLR enabled
+					CP ON		Code Protection Bit ON
+					CPD OFF		Data code protection BIT OFF
+					BOREN ON	BOR enabled
+					IESO OFF	Internal External Switchover bit disabled
+					FCMEN OFF	Fail-safe clock monitor disabled
+					LVP OFF		LVP Off
+					
+ 0x2008 CONFIG2 0x39FF
+					BOR4V	BOR4V	BOR at 4V
+					WRT		HALF	0000-0FFF write protected, 1000-1FFF writeable by EECON
+					

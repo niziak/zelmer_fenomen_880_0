@@ -8,7 +8,7 @@
 
 #include <xc.h>
 #include <htc.h>
-#define _XTAL_FREQ 16000000
+#define _XTAL_FREQ 4000000
 
 #include "conf_bits.h"
 #include "led_seg.h"
@@ -67,24 +67,36 @@ void main(void) {
 
     ANSEL = ANSELH = 0; // configure analog as digital
 
-    TRISBbits.TRISB0 = 1; // as input - external interrupt
-    PORTBbits.RB0 = 0;
+//    TRISBbits.TRISB0 = 1; // as input - external interrupt
+//    PORTBbits.RB0 = 0;
+//
+//    OPTION_REGbits.INTEDG = 0; // EXT INT on falling edge
+//    INTCONbits.INTF = 0; // clear EXT INT flag
+//    INTCONbits.INTE = 1; // EXT INT enable
+//    INTCONbits.GIE = 1; // global interrupt enable flag
 
-    OPTION_REGbits.INTEDG = 0; // EXT INT on falling edge
-    INTCONbits.INTF = 0; // clear EXT INT flag
-    INTCONbits.INTE = 1; // EXT INT enable
-    INTCONbits.GIE = 1; // global interrupt enable flag
-
-    DSP_EN_1ST
-    for (;;)
+    TRISB = 0b00000001; // RB as input
+    unsigned char ucI;
+    
+    while (1)
     {
         DSP_EN_1ST
-        _delay(10000);
         DSP_EN_2ND
-        _delay(10000);
-        PORTB++;
-    }
+        PORTB = 0;
+        __delay_ms(3000);
 
+        for (ucI=0; ucI<12; ucI++)
+        {
+            DSP_EN_1ST
+            __delay_ms(500);
+            //_delay(100000);
+            DSP_EN_2ND
+            __delay_ms(500);
+            //_delay(100000);
+            PORTB = acDigitToSegMap[ucI];
+        }
+    }
+    
     while (1)
     {
         if (ucZC) // if zero crossing detected

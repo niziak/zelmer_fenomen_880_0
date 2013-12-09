@@ -13,10 +13,11 @@
 extern "C" {
 #endif
 
-#define DSP_EN_1ST  { TRISCbits.TRISC4=1;  TRISCbits.TRISC5=1; PORTCbits.RC4 = 1; PORTCbits.RC5 = 0;}
-#define DSP_EN_2ND  { TRISCbits.TRISC4=1;  TRISCbits.TRISC5=1; PORTCbits.RC4 = 0; PORTCbits.RC5 = 1;}
+#define DSP_EN_1ST  { TRISCbits.TRISC4=0;  TRISCbits.TRISC5=0; PORTCbits.RC4 = 1; PORTCbits.RC5 = 0;}
+#define DSP_EN_2ND  { TRISCbits.TRISC4=0;  TRISCbits.TRISC5=0; PORTCbits.RC4 = 0; PORTCbits.RC5 = 1;}
 
-
+extern unsigned char acDispContent[2];  ///< 2 byte array to store current display content
+extern const unsigned char acDigitToSegMap[];
 
 #ifdef	__cplusplus
 }
