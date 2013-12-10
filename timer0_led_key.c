@@ -27,11 +27,6 @@
  */
 
 #include "led_seg.h"
-//                    76543210
-#define LED_NONE    0b00000000
-#define LED_RED     0b01000000      // RB6
-#define LED_GREEN   0b00001000      // RB3
-#define LED_ORANGE  0b01001000      // RB6+RB3
 
 typedef enum
 {
@@ -42,7 +37,7 @@ typedef enum
 
 static volatile T0_MODE_DEF eMode = 0;
 
-void T0_vIsr(void)
+inline void T0_vIsr(void)
 {
     if (INTCONbits.T0IF)
     {
@@ -56,20 +51,26 @@ void T0_vIsr(void)
             acDispContent[0] = SEG_C;
             acDispContent[1] = SEG_3;
         }
-//        DSP_DISABLE
-        PORTCbits.RC7 = 1; // turn off dot
-        //        76543210
+        DSP_DIS_DEC // turn off dot
         switch (eMode)
         {
             case T0_MODE_1ST_DIGIT:
                 // we come here from TO_MODE_LED, so disable LED before changing state
                 DSP_DISABLE
                 PORTB = acDigitToSegMap[acDispContent[0]];
+                if (stDisp.bDec1)
+                {
+                    DSP_EN_DEC
+                }
                 DSP_EN_1ST
                 break;
 
             case T0_MODE_2ND_DIGIT:
                 PORTB = acDigitToSegMap[acDispContent[1]];
+                if (stDisp.bDec2)
+                {
+                    DSP_EN_DEC
+                }
                 DSP_EN_2ND
                 break;
 
@@ -77,12 +78,18 @@ void T0_vIsr(void)
                 // to prevent ghost characters, disable all segments, then enable bicolor LED.
                 PORTB = 0b11111110;
                 DSP_DISABLE
-                PORTB = LED_GREEN;
+                if (stDisp.bGreen)
+                {
+                    PORTB |= LED_GREEN;
+                }
+                if (stDisp.bRed)
+                {
+                    PORTB |= LED_RED;
+                }
                 DSP_EN_LED
                 break;
         }
-        eMode++;
-        if (eMode>T0_MODE_LED)
+        if (++eMode > T0_MODE_LED)
         {
             eMode = T0_MODE_1ST_DIGIT;
         }

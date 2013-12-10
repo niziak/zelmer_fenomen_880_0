@@ -12,7 +12,7 @@
 #include "led_seg.h"
 #include "delay.h"
 #include "timer0_led_key.h"
-
+#include "ext_int.h"
 
 
 /**
@@ -28,29 +28,18 @@
  *                           XT ---- RA6  10 ############# 19 Vss [-]
  *        2 color LED common K  <--- RC0  11 ############# 18 RC7 ------------> 7 seg dot
  *             Triac gate <--------- RC1  12 ############# 17 RC6
- *             Enigne RPM ---------> RC2  13 ############# 16 RC5 ------------> 7 seg right display plus to Anode + [-] Key
+ *             Enigne RPM ----> CCP1 RC2  13 ############# 16 RC5 ------------> 7 seg right display plus to Anode + [-] Key
  * Lower 3 keys (L when press) ----> RC3  14 ############# 15 RC4 ------------> 7 seg left display plus to Anode + [+] Key
  *
  * All hall sensors in idle gives 5V, when magnet is detected voltage drops to zero.
  *
+ * Enigne RPM are 2 positive pulses per rotation. So it is good to measure time between rising edges.
  */
 
 
-
-#define LED_RED     { }
-#define LED_GREEN   { }
-
-volatile unsigned char ucCounter;
-volatile unsigned char ucZC;    ///< Zero Crossing flag
-
 void interrupt myIsr(void)
 {
-    if (INTCONbits.INTF)    // external interrupt edge detected
-    {
-        ucZC = 1;
-        ucCounter++;
-        INTCONbits.INTF = 0;
-    }
+    EINT_vIsr();
     T0_vIsr();
 }
 
@@ -63,13 +52,6 @@ void main(void) {
 
     ANSEL = ANSELH = 0; // configure analog as digital
 
-//    TRISBbits.TRISB0 = 1; // as input - external interrupt
-//    PORTBbits.RB0 = 0;
-//
-//    OPTION_REGbits.INTEDG = 0; // EXT INT on falling edge
-//    INTCONbits.INTF = 0; // clear EXT INT flag
-//    INTCONbits.INTE = 1; // EXT INT enable
-
     //                   76543210
     TRISBbits.TRISB0 = 0b00000001; //RB7-RB1 as outpus; RB0 as input (EXT INT)
     TRISCbits.TRISC4 = 0; // common anode first digit
@@ -80,44 +62,45 @@ void main(void) {
     TRISCbits.TRISC3 = 1; //RC0 as input (key)
     TRISAbits.TRISA4 = 1; //RA4 as input (key)
     
-    unsigned char ucI;
 
+    EINT_vInit();
     T0_vInit();
     ei();   // global interrupt enable
-    
-    acDispContent[0] = SEG_E;
-    acDispContent[1] = SEG_R;
+
+    LED_Disp (SEG_E, SEG_R);
     delay_ms(3000);
     
     while (1)
     {
+        LED_Disp (SEG_NONE, SEG_NONE);
+        delay_ms (1000);
 
-        acDispContent[0] = SEG_P;
-        acDispContent[1] = SEG_A;
-        delay_ms(250);
-        acDispContent[0] = (PORTA & 0xF0) >> 8;
-        acDispContent[1] = (PORTA & 0x0F);
+        LED_Disp (SEG_P, SEG_A);
         delay_ms(500);
+        LED_DispHex (PORTA);
+        delay_ms(1000);
 
-
-        acDispContent[0] = SEG_P;
-        acDispContent[1] = SEG_C;
-        delay_ms(250);
-        acDispContent[0] = (PORTC & 0xF0) >> 8;
-        acDispContent[1] = (PORTC & 0x0F);
+        LED_Disp (SEG_P, SEG_C);
         delay_ms(500);
+        LED_DispHex (PORTC);
+        delay_ms(1000);
+
+        LED_Disp (SEG_C, SEG_NONE);
+        delay_ms(500);
+        LED_DispHex (ucCounter);
+        delay_ms(1000);
 
     }
     
-    while (1)
-    {
-        if (ucZC) // if zero crossing detected
-        {
-            PORTCbits.RC0 = 1;
-            delay_ms(1);
-            PORTCbits.RC0 = 0;
-            ucZC = 0;
-        }
-    }
+//    while (1)
+//    {
+//        if (ucZC) // if zero crossing detected
+//        {
+//            PORTCbits.RC0 = 1;
+//            delay_ms(1);
+//            PORTCbits.RC0 = 0;
+//            ucZC = 0;
+//        }
+//    }
     return;
 }

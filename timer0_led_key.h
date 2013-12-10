@@ -12,7 +12,7 @@
 extern "C" {
 #endif
 
-extern void T0_vIsr(void);
+extern inline void T0_vIsr(void);
 extern void T0_vInit(void);
 
 #ifdef	__cplusplus

@@ -15,6 +15,25 @@ const unsigned char acDigitToSegMap[] =
 
 
 
-volatile SEG_CHAR_ID_DEF acDispContent[2];  ///< 2 byte array to store current display content
+volatile SEG_CHAR_ID_DEF    acDispContent[2];  ///< 2 byte array to store current display content
+volatile LED_OTHER_DEF      stDisp;            ///< bit field with led state and decimal point state
 
+/**
+ * Show characters on display, see @ref SEG_CHAR_ID_DEF
+ * @param eChar1
+ * @param eChar2
+ */
+void LED_Disp(SEG_CHAR_ID_DEF eChar1, SEG_CHAR_ID_DEF eChar2)
+{
+    acDispContent[0] = eChar1;
+    acDispContent[1] = eChar2;
+}
 
+/**
+ * Display 8bit value as 2 digit HEX on LED display
+ * @param ucValue
+ */
+void LED_DispHex (unsigned char ucValue)
+{
+   LED_Disp (ucValue >> 8, ucValue & 0x0F);
+}
