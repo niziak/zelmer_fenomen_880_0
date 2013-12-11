@@ -29,15 +29,15 @@
 #include <xc.h>
 #include "ext_int.h"
 #include "led_seg.h"
-
-volatile unsigned char ucCounter;
-volatile unsigned char ucZC;    ///< Zero Crossing flag
-
+#include "timer0_led_key.h"
 
 inline void EINT_vIsr(void)
 {
     if (INTCONbits.INTF)    // external interrupt edge detected
     {
+        // measure time between EINTs
+        ucEINTGap = 0;
+
         // Switch EXT INT to detect oposite edge
         if (OPTION_REGbits.INTEDG == 0)
         {
@@ -47,8 +47,6 @@ inline void EINT_vIsr(void)
         {
             OPTION_REGbits.INTEDG = 0; // EXT INT on falling edge
         }
-        ucZC = 1;
-        ucCounter++;
         if (stDisp.bDec1)
         {
             stDisp.bDec1 = 0;

@@ -23,10 +23,11 @@ typedef enum
 
 typedef struct
 {
-    unsigned int    bDec1 : 1;     ///< decimal point of first display
-    unsigned int    bDec2 : 1;     ///< decimal point of second display
-    unsigned int    bRed  : 1;     ///< Red LED
-    unsigned int    bGreen: 1;     ///< Green LED
+    unsigned int    bDec1       : 1;     ///< decimal point of first display
+    unsigned int    bDec2       : 1;     ///< decimal point of second display
+    unsigned int    bLedRed     : 1;     ///< Red LED
+    unsigned int    bLedGreen   : 1;     ///< Green LED
+    unsigned int    bLedBlink   : 1;     ///< bicolor led is blinking
 } LED_OTHER_DEF;
 
 #define DSP_EN_1ST  { PORTCbits.RC4 = 1; PORTCbits.RC5 = 0; PORTCbits.RC0 = 1; }

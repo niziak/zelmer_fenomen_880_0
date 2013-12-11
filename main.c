@@ -7,8 +7,9 @@
 
 
 #include <xc.h>
-
 #include "conf_bits.h"
+
+#include "config.h"
 #include "led_seg.h"
 #include "delay.h"
 #include "timer0_led_key.h"

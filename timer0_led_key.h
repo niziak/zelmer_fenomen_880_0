@@ -15,6 +15,8 @@ extern "C" {
 extern inline void T0_vIsr(void);
 extern inline void T0_vInit(void);
 
+extern volatile unsigned char ucEINTGap;
+
 #ifdef	__cplusplus
 }
 #endif

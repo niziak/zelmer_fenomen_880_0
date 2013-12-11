@@ -25,6 +25,7 @@
       <itemPath>ext_int.h</itemPath>
       <itemPath>timer1_engine_rpm.h</itemPath>
       <itemPath>timer1_enigne_rpm.c</itemPath>
+      <itemPath>config.h</itemPath>
     </logicalFolder>
     <logicalFolder name="ExternalFiles"
                    displayName="Important Files"

@@ -41,8 +41,7 @@ inline void CCP1_vIsr(void)
        TMR1H = 0;
        TMR1L = 0;
        uiPrevT1Val  = uiCurrT1Val;
-       uiCurrT1Val  = CCPR1L;
-       uiCurrT1Val |= CCPR1H << 8;
+       uiCurrT1Val  = CCPR1H << 8 | CCPR1L;
 
        if (stDisp.bDec2)
        {
@@ -57,7 +56,6 @@ inline void CCP1_vIsr(void)
 
    if (PIR1bits.TMR1IF)
    {
-       stDisp.bRed = 1;
        PIR1bits.TMR1IF = 0;
    }
 }

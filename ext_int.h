@@ -15,8 +15,6 @@ extern "C" {
 extern inline void EINT_vIsr(void);
 extern inline void EINT_vInit(void);
 
-extern volatile unsigned char ucCounter;
-
 #ifdef	__cplusplus
 }
 #endif

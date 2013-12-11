@@ -20,6 +20,7 @@ extern volatile unsigned int uiCurrT1Val;
 
 extern volatile unsigned char   ucSpeed;
 
+#define ABS_DIFF(a,b) ((a) > (b) ? ((a) - (b)) : ((b) - (a))
 #define GET_ENGINE_RPM  ( (uiPrevT1Val) > (uiCurrT1Val) ? ((uiPrevT1Val) - (uiCurrT1Val)) : ((uiCurrT1Val) - (uiPrevT1Val)) )
 
 #ifdef	__cplusplus

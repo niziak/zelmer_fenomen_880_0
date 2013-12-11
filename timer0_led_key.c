@@ -1,6 +1,3 @@
-#include <xc.h>
-#include "timer1_engine_rpm.h"
-
 /**
  * With external crystal:
  * Fout = Fclk / (Prescaler * (256-TMR0) * Count)
@@ -38,6 +35,9 @@
  * Key is pressed, when corresponding bit is set to 0
  */
 
+#include <xc.h>
+#include "timer1_engine_rpm.h"
+#include "config.h"
 #include "led_seg.h"
 
 typedef enum
@@ -61,12 +61,16 @@ typedef enum
     KEY_LAST    = 0xFF,         // to force at least 8 bit enum
 } KEY_DEFS;
 
+volatile unsigned char ucEINTGap;           ///< counter to measure time between EINTs (incremented by T0 every 4ms)
 static volatile T0_MODE_DEF eMode;          ///< what to do in current ISR call
 
-#define KEY_DEBOUNCE_WAIT_MS    20          ///< time in ms, to confirm that key is still pressed
-#define KEY_DEBOUNCE_WAIT       ((KEY_DEBOUNCE_WAIT_MS)/12)   ///< ISR works at 244Hz = every 4 ms x 3 columns =  12 ms.
 
-// TODO with every turn, store 2 bit of key state into 2 next bits - 6 bits only are needed
+/**
+ * Routine to be called from ISR.
+ * For every selected column (by @ref eMode), 2 bit key row state is stored as 2 separate bits inside @ref eKeyboardState
+ * 
+ * @return
+ */
 inline static KEY_DEFS eGetKey(void)
 {
     static volatile unsigned char ucKeyPressTime; ///< debounce counter
@@ -89,13 +93,13 @@ inline static KEY_DEFS eGetKey(void)
         if (KEY_NONE != eKeyboardState)
         {
             // remember keyboard state in temporary value
-            if (ucKeyPressTime==0)
+            if (ucKeyPressTime == 0)
             {
                 ekeyboardStateOld = eKeyboardState;
             }
 
             // count debounce time, but prevent from counter oveflow
-            if (ucKeyPressTime<=KEY_DEBOUNCE_WAIT)
+            if (ucKeyPressTime <= KEY_DEBOUNCE_WAIT)
             {
                 ucKeyPressTime++;
             }
@@ -124,8 +128,22 @@ inline static KEY_DEFS eGetKey(void)
 
 inline void T0_vIsr(void)
 {
+    static unsigned char ucBlinkState;
+
     if (INTCONbits.T0IF)
     {
+        if (ucEINTGap > EINT_EXPECTED_T0_CYCLES)
+        {
+            stDisp.bLedRed = 1;
+            stDisp.bLedBlink = 1;
+        }
+        else
+        {
+            stDisp.bLedRed = 0;
+            stDisp.bLedBlink = 0;
+            ucEINTGap++;
+        }
+        ucBlinkState++;
         // read keys before changing eMode
         switch (eGetKey())
         {
@@ -186,13 +204,16 @@ inline void T0_vIsr(void)
                 PORTB = 0b11111110;
                 DSP_DISABLE
                 PORTB = LED_NONE ;
-                if (stDisp.bGreen)
+                if (ucBlinkState & 0b1000000)
                 {
-                    PORTB |= LED_GREEN;
-                }
-                if (stDisp.bRed)
-                {
-                    PORTB |= LED_RED;
+                    if (stDisp.bLedGreen)
+                    {
+                        PORTB |= LED_GREEN;
+                    }
+                    if (stDisp.bLedRed)
+                    {
+                        PORTB |= LED_RED;
+                    }
                 }
                 DSP_EN_LED
                 break;
