@@ -13,7 +13,7 @@ extern "C" {
 #endif
 
 extern inline void EINT_vIsr(void);
-extern void EINT_vInit(void);
+extern inline void EINT_vInit(void);
 
 extern volatile unsigned char ucCounter;
 

@@ -1,3 +1,31 @@
+/**
+ * Main sine wave:
+ *     _________                       _________
+ *    /         \                     /         \
+ *   /           \                   /           \
+ *  /             \                 /             \
+ * ----------------+---------------+---------------+-------
+ *                 .\             /.               .\
+ *                 . \           / .               . \
+ *                 .  \_________/  .               .
+ *                 .               .               .
+ * EXT INT leve:   .               .               .
+ *  _______________.               ._______________.
+ * |               |_______________|               |________
+ *
+ *                 |<------------->| one half wave period = 10 ms
+ *                 |       ########| expected Triac conduction time
+ *                 |<----->|       | wait time before generating gate pulse
+ *                 |       #       | triac gate pulse
+ *
+ * Workflow:
+ *                 |<-             | EXT INT: set CCP2 to generate soft IRQ after XXX timer1 ticks
+ *                 |       |<-     | CCP2 IRQ turn on triac gate,
+ *                 |               | set CCP2 to generate soft IRQ after time needed to switch on triac (1ms?)
+ *                 |        |<-    | CCP2 IRQ: switch off triac gate. Disable CCP2
+ *
+ */
+
 #include <xc.h>
 #include "ext_int.h"
 #include "led_seg.h"
@@ -21,13 +49,19 @@ inline void EINT_vIsr(void)
         }
         ucZC = 1;
         ucCounter++;
-        stDisp.bGreen = ucCounter & 1;
-        stDisp.bRed   = ucCounter & 2 > 1;
+        if (stDisp.bDec1)
+        {
+            stDisp.bDec1 = 0;
+        }
+        else
+        {
+            stDisp.bDec1 = 1;
+        }
         INTCONbits.INTF = 0;
     }
 }
 
-void EINT_vInit(void)
+inline void EINT_vInit(void)
 {
     TRISBbits.TRISB0 = 1; // as input - external interrupt
     PORTBbits.RB0 = 0;
