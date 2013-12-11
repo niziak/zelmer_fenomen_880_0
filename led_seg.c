@@ -35,5 +35,5 @@ void LED_Disp(SEG_CHAR_ID_DEF eChar1, SEG_CHAR_ID_DEF eChar2)
  */
 void LED_DispHex (unsigned char ucValue)
 {
-   LED_Disp (ucValue >> 8, ucValue & 0x0F);
+   LED_Disp (ucValue >> 4, ucValue & 0x0F);
 }
