@@ -21,6 +21,10 @@
       <itemPath>delay.h</itemPath>
       <itemPath>timer0_led_key.c</itemPath>
       <itemPath>timer0_led_key.h</itemPath>
+      <itemPath>ext_int.c</itemPath>
+      <itemPath>ext_int.h</itemPath>
+      <itemPath>timer1_engine_rpm.h</itemPath>
+      <itemPath>timer1_enigne_rpm.c</itemPath>
     </logicalFolder>
     <logicalFolder name="ExternalFiles"
                    displayName="Important Files"
