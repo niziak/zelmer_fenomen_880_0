@@ -52,6 +52,7 @@ volatile unsigned char   ucCurrentEngineSpeed; ///< variable to keep user select
 
 volatile unsigned int    uiOnePulseCountdown;       ///<
 volatile unsigned char   bMainTrigger;  ///< T0 trigger for main loop (active when 0)
+static unsigned char ucSpeedStepChangeTimer;
 
 /**
  * Durint INT GIE is automatically disabled
@@ -67,11 +68,44 @@ void interrupt myIsr(void)
     T0_vIsr();
 }
 
+void vChangeSpeedStep(void)
+{
+    // spinning up
+    if (ucCurrentEngineSpeed < ucSelectedEngineSpeed)
+    {
+        ucCurrentEngineSpeed++;
+    }
+    //spinning down
+    if (ucCurrentEngineSpeed > ucSelectedEngineSpeed)
+    {
+        ucCurrentEngineSpeed--;
+    }
+}
+
 void vUpdateSystemState(void)
 {
         /////////////////////////////////////////
         // update system state
 
+
+        if (ucSpeedStepChangeTimer > 0)
+        {
+                ucSpeedStepChangeTimer--;
+                if (ucSpeedStepChangeTimer == 0)
+                {
+                    vChangeSpeedStep();
+                }
+        }
+        
+        if (ucCurrentEngineSpeed != ucSelectedEngineSpeed)
+        {
+            if (ucSpeedStepChangeTimer == 0)
+            {
+                ucSpeedStepChangeTimer = SPEED_CHANGE_STEP_INTERVAL_IN_T0_OV_CYCLES;
+            }
+        }
+
+        
         // decrement autopulse counter
         if (uiOnePulseCountdown>0)
         {
@@ -149,6 +183,7 @@ void vStartStopEngine(void)
             bTriacOn = 0;
             ENGINE_RELAY_OFF
             CCP2_vInitAndDisable(); // will call TRIAC_OFF macro
+            ucCurrentEngineSpeed = MIN_ENGINE_SPEED; // always start from lowest speed
         }
 }
 
@@ -198,49 +233,6 @@ void main(void) {
             vUpdateSystemState();
             vUpdateDisplay();
             vStartStopEngine();
-
-//        LED_Disp (SEG_NONE, SEG_NONE);
-//        delay_ms (50);
-
-//        LED_DispHex (ucSpeed);
-//        delay_ms (100);
-
-//        LED_Disp (SEG_P, SEG_A);
-//        delay_ms(500);
-//        LED_DispHex (PORTA);
-//        delay_ms(1000);
-//
-//        LED_Disp (SEG_P, SEG_C);
-//        delay_ms(500);
-//        LED_DispHex (PORTC);
-//        delay_ms(1000);
-//
-//        LED_Disp (SEG_C, SEG_NONE);
-//        delay_ms(500);
-//        LED_DispHex (ucCounter);
-//        delay_ms(1000);
-//
-//
-//        LED_Disp (SEG_R, SEG_P);
-//        delay_ms(500);
-//        LED_DispHex (GET_ENGINE_RPM >> 8);
-//        delay_ms(1000);
-//        LED_Disp (SEG_NONE, SEG_NONE);
-//        delay_ms (200);
-//        LED_DispHex (GET_ENGINE_RPM & 0xFF);
-//        delay_ms(1000);
-
     }
-    
-//    while (1)
-//    {
-//        if (ucZC) // if zero crossing detected
-//        {
-//            PORTCbits.RC0 = 1;
-//            delay_ms(1);
-//            PORTCbits.RC0 = 0;
-//            ucZC = 0;
-//        }
-//    }
     return;
 }

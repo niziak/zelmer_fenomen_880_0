@@ -30,10 +30,11 @@ extern "C" {
 #define EINT_EXPECTED_EVERY_MS          200         ///< if no EINT after this time - assume device overheat
 #define EINT_EXPECTED_T0_OV_CYCLES         ((EINT_EXPECTED_EVERY_MS)/(T0_OV_PERIOD_MS))        ///< EINT expected to be received during XXX TIMER0 cycles
 
-#define AUTOPULSE_PERIOD_MS             1000                                /// autopulse time in ms
-#define AUTOPULSE_PERIOD_IN_T0_OV_CYCLES  ((AUTOPULSE_PERIOD_MS)/(T0_OV_PERIOD_MS))           ///< autopulse time in TIMER0 cycles
+#define MANUAL_PULSE_PERIOD_MS             1000                                /// autopulse time in ms
+#define MANUAL_PULSE_PERIOD_IN_T0_OV_CYCLES  ((MANUAL_PULSE_PERIOD_MS)/(T0_OV_PERIOD_MS))           ///< autopulse time in TIMER0 cycles
 
-
+#define SPEED_CHANGE_STEP_INTERVAL_MS    300
+#define SPEED_CHANGE_STEP_INTERVAL_IN_T0_OV_CYCLES    ((SPEED_CHANGE_STEP_INTERVAL_MS)/(T0_OV_PERIOD_MS))
 
 #define TRIAC_GATE_PULSE_LEN_US          500
 #define TRIAC_GATE_PULSE_LEN_T1_CYCLES   ((T1_CYCLES_FOR_US)*(TRIAC_GATE_PULSE_LEN_US))
@@ -47,7 +48,8 @@ extern "C" {
 #define ENGINE_RELAY_ON                 { PORTAbits.RA5 = 1; };
 #define ENGINE_RELAY_OFF                { PORTAbits.RA5 = 0; };
 
-#define CONFIG_CHECK_OVERHEAT           0
+#define CONFIG_CHECK_OVERHEAT           1
+#define CONFIG_SHOW_25HZ_ON_DOT         1
 
 
 extern volatile unsigned char   bOverheat; 

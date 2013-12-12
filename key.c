@@ -100,6 +100,7 @@ inline void vScanKeyAndHandle(void)
             case KEY_START:
                 if (bEngineOn == 0)
                 {
+                    ucCurrentEngineSpeed = MIN_ENGINE_SPEED;
                     bEngineOn = 1;
                 }
                 else
@@ -112,12 +113,18 @@ inline void vScanKeyAndHandle(void)
                 // ignore key when previous auto pulse is not finished
                 if (uiOnePulseCountdown==0)
                 {
+                    ucCurrentEngineSpeed = MIN_ENGINE_SPEED;
                     bEngineOn = 1;
-                    uiOnePulseCountdown = AUTOPULSE_PERIOD_IN_T0_OV_CYCLES;
+                    uiOnePulseCountdown = MANUAL_PULSE_PERIOD_IN_T0_OV_CYCLES * (1+ucSelectedEngineSpeed / 12);
                 }
                 break;
 
             case KEY_AUTO:
+                ucCurrentEngineSpeed = MIN_ENGINE_SPEED;
+                break;
+
+            case KEY_TURBO:
+                ucCurrentEngineSpeed = MIN_ENGINE_SPEED;
                 break;
 
             case KEY_MINUS:

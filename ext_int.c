@@ -73,13 +73,13 @@ inline void EINT_vIsr(void)
         if (bTriacOn)
         {
             // calculate switch on time as value relative to current TIMER1 value (16 bit arithmetic with wrap around)
-            CCP2_vSetWhenT1(1, (unsigned int)T1_uiGet() + (auiSpeedTable[ucSelectedEngineSpeed-1]) ); // generate triac pulse after delay time
+            CCP2_vSetWhenT1(1, (unsigned int)T1_uiGet() + (auiSpeedTable[ucCurrentEngineSpeed-1]) ); // generate triac pulse after delay time
         }
         else
         {
             //CCP2_vInitAndDisable();
         }
-
+#if (CONFIG_SHOW_25HZ_ON_DOT)
         if (stDisp.bDec1)
         {
             stDisp.bDec1 = 0;
@@ -88,7 +88,8 @@ inline void EINT_vIsr(void)
         {
             stDisp.bDec1 = 1;
         }
-        
+#endif //(CONFIG_SHOW_25HZ_ON_DOT)
+
         INTCONbits.INTF = 0;
     }
 }
