@@ -12,15 +12,23 @@
 extern "C" {
 #endif
 
-extern inline void CCP1_vIsr(void);
 extern inline void CCP1_vInit(void);
+extern inline void CCP1_vIsr(void);
+
+extern inline void T1_vInit(void);
+extern inline void T1_vIsr(void);
+extern inline void T1_vSet(unsigned int uiVal);
+extern inline unsigned int T1_uiGet(void);
+
+extern inline void CCP2_vInitAndDisable(void);
+extern inline void CCP2_vIsr(void);
+extern inline void CCP2_vSetWhenT1(unsigned char bState, unsigned int uiExpectedT1Value);
 
 extern volatile unsigned int uiPrevT1Val;
 extern volatile unsigned int uiCurrT1Val;
 
-extern volatile unsigned char   ucSpeed;
 
-#define ABS_DIFF(a,b) ((a) > (b) ? ((a) - (b)) : ((b) - (a))
+
 #define GET_ENGINE_RPM  ( (uiPrevT1Val) > (uiCurrT1Val) ? ((uiPrevT1Val) - (uiCurrT1Val)) : ((uiCurrT1Val) - (uiPrevT1Val)) )
 
 #ifdef	__cplusplus
