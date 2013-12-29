@@ -42,7 +42,7 @@
  */
 
 
-volatile unsigned char   bEngineOn;             ///<
+volatile unsigned char   bEngineOn;             ///< enable engine power and disable engine brake
 volatile unsigned char   bTriacOn;              ///< permits EINT and CCP2 module generate gating pulses
 volatile unsigned char   bOverheat;             ///< engine overheat
 volatile unsigned char   bWrongEq;              ///< wrong equipment (sensors broken?)
@@ -165,10 +165,16 @@ void vUpdateDisplay(void)
         acDispContent[0] = (PORTA & 0x0F);
 }
 
+/**
+ * Check system state and permit engine on, otherwise stop engine
+ * or emergency stop engine (with brake)
+ *
+ * Engine is stopped by stoping generation of gating pulse to triac,
+ * without touching engine relay
+ */
 void vStartStopEngine(void)
 {
-        /////////////////////////
-        // make actions
+    
         if (    ( 0 == bOverheat )
              && ( 1 == bGoodEq   )
              && ( 0 == bWrongEq  )
@@ -180,10 +186,16 @@ void vStartStopEngine(void)
         }
         else
         {
+            // check emergency braking condition:
+            if (    ( 1 == bWrongEq )
+                 || ( 0 == bGoodEq  ) )
+            {
+                ENGINE_RELAY_OFF //TODO disable relay also when engine is gently stopped
+            }
+
             stDisp.bDec2 = 0;
             bEngineOn = 0;  // delete user choice to turn engine on
             bTriacOn = 0;
-            ENGINE_RELAY_OFF
             CCP2_vInitAndDisable(); // will call TRIAC_OFF macro
             ucCurrentEngineSpeed = MIN_ENGINE_SPEED; // always start from lowest speed
         }
