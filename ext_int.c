@@ -35,23 +35,31 @@
 
 /**
  * Engine speed defined as delay in Timer1 ticks after zero-crossing
+ *
+ * at 8111 engine is only buzzing, 7333 is ok for lowest possible but not usable
  */
+#define DELAY_ZC(x)     ((x)*T1_CYCLES_FOR_US),
+
+
 unsigned int auiSpeedTable[12] =
 {
-    8111 * T1_CYCLES_FOR_US,
-    7333 * T1_CYCLES_FOR_US,
-    6722 * T1_CYCLES_FOR_US,
-    6166 * T1_CYCLES_FOR_US,
-    5666 * T1_CYCLES_FOR_US,
-    5166 * T1_CYCLES_FOR_US,
-    4666 * T1_CYCLES_FOR_US,
-    3666 * T1_CYCLES_FOR_US,
-    3111 * T1_CYCLES_FOR_US,
-    2500 * T1_CYCLES_FOR_US,
-    1722 * T1_CYCLES_FOR_US,
-    0100 * T1_CYCLES_FOR_US,
+    DELAY_ZC(7000)
+    DELAY_ZC(6611)
+    DELAY_ZC(6222)
+    DELAY_ZC(5889)
+    DELAY_ZC(5556)
+    DELAY_ZC(5278)
+    DELAY_ZC(4944)
+    DELAY_ZC(4611)
+    DELAY_ZC(4278)
+    DELAY_ZC(3944)
+    DELAY_ZC(3611)
+    DELAY_ZC(3278)
 };
 
+/**
+ * External interrupt handler. EINT is generated when zero crossing occurs.
+ */
 inline void EINT_vIsr(void)
 {
     if (INTCONbits.INTF)    // external interrupt edge detected
@@ -79,6 +87,7 @@ inline void EINT_vIsr(void)
         {
             //CCP2_vInitAndDisable();
         }
+
 #if (CONFIG_SHOW_25HZ_ON_DOT)
         if (stDisp.bDec1)
         {

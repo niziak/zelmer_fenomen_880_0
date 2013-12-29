@@ -30,7 +30,7 @@
  *                           XT ---- RA7  09 ############# 20 Vdd [+]
  *                           XT ---- RA6  10 ############# 19 Vss [-]
  *        2 color LED common K  <--- RC0  11 ############# 18 RC7 ------------> 7 seg dot
- *             Triac gate <---- CCP2 RC1  12 ############# 17 RC6
+ *             Triac gate <---- CCP2 RC1  12 ############# 17 RC6 ------------> power for hall H3 and hall HC
  *             Enigne RPM ----> CCP1 RC2  13 ############# 16 RC5 ------------> 7 seg 1st display plus to Anode + [-] Key (active low)
  * Lower key row L when press) ----> RC3  14 ############# 15 RC4 ------------> 7 seg 2nd display plus to Anode + [+] Key (active low
  *
@@ -42,20 +42,20 @@
  */
 
 
-volatile unsigned char   bEngineOn;     ///<
-volatile unsigned char   bTriacOn;      ///< permits EINT and CCP2 module generate gating pulses
-volatile unsigned char   bOverheat;     ///< engine overheat
-volatile unsigned char   bWrongEq;      ///< wrong equipment (sensors broken?)
-volatile unsigned char   bGoodEq;       ///< equipment are valid and close (possible to turn on engine)
+volatile unsigned char   bEngineOn;             ///<
+volatile unsigned char   bTriacOn;              ///< permits EINT and CCP2 module generate gating pulses
+volatile unsigned char   bOverheat;             ///< engine overheat
+volatile unsigned char   bWrongEq;              ///< wrong equipment (sensors broken?)
+volatile unsigned char   bGoodEq;               ///< equipment are valid and close (possible to turn on engine)
 volatile unsigned char   ucSelectedEngineSpeed; ///< variable to keep user selected speed 0..12
-volatile unsigned char   ucCurrentEngineSpeed; ///< variable to keep user selected speed 0..12
+volatile unsigned char   ucCurrentEngineSpeed;  ///< variable to keep user selected speed 0..12
 
-volatile unsigned int    uiOnePulseCountdown;       ///<
-volatile unsigned char   bMainTrigger;  ///< T0 trigger for main loop (active when 0)
-static unsigned char ucSpeedStepChangeTimer;
+volatile unsigned int    uiOnePulseCountdown;   ///<
+volatile unsigned char   bMainTrigger;          ///< T0 trigger for main loop (active when 0)
+static unsigned char     ucSpeedStepChangeTimer;
 
 /**
- * Durint INT GIE is automatically disabled
+ * Durint interrupt handler GIE is automatically disabled
  */
 void interrupt myIsr(void)
 {
@@ -161,6 +161,8 @@ void vUpdateDisplay(void)
             stDisp.bLedBlink = 1;
             LED_Disp (SEG_H, SEG_E);
         }
+
+        acDispContent[0] = (PORTA & 0x0F);
 }
 
 void vStartStopEngine(void)
@@ -207,11 +209,14 @@ void main(void) {
     TRISCbits.TRISC0 = 0; // common anode bicolor LED
     TRISCbits.TRISC7 = 0; // RC7 as output - decimal point
 
-    TRISCbits.TRISC3 = 1; //C3 as input (key)
-    TRISAbits.TRISA4 = 1; //A4 as input (key)
+    TRISCbits.TRISC3 = 1; // C3 as input (key)
+    TRISAbits.TRISA4 = 1; // A4 as input (key)
 
-    TRISAbits.TRISA5 = 0; //A5 as output - engine relay
-    TRISCbits.TRISC1 = 0; //C5 as output - triac gate
+    TRISAbits.TRISA5 = 0; // A5 as output - engine relay
+    TRISCbits.TRISC1 = 0; // C5 as output - triac gate
+
+    TRISCbits.TRISC6 = 0; // C6 as output - power for hall sensors
+    PORTCbits.RC6 = 1;    // enable hall power
 
     EINT_vInit();
     T0_vInit();
