@@ -212,8 +212,8 @@ void main(void) {
     ANSEL = ANSELH = 0; // configure analog as digital
 
 
-    //       76543210
-    TRISA = 0b0001111;  //RA3-RA0 as inputs - hall sensors from equipment
+    //        76543210
+    TRISA = 0b00001111; //RA3-RA0 as inputs - hall sensors from equipment
     TRISB = 0b00000001; //RB7-RB1 as outpus; RB0 as input (EXT INT)
 
     TRISCbits.TRISC4 = 0; // common anode first digit
@@ -244,12 +244,15 @@ void main(void) {
 
     while (1)
     {
-        while (bMainTrigger);
+        // wait for bMainTrigger to be ZERO
+        while (1 == bMainTrigger);
             bMainTrigger = 1;
+            
             vScanKeyAndHandle();
             vUpdateSystemState();
-            vUpdateDisplay();
             vStartStopEngine();
+            vUpdateDisplay();
+
     }
     return;
 }

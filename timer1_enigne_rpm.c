@@ -60,13 +60,17 @@ inline void CCP1_vIsr(void)
 
 }
 
+/**
+ * CCP2 works in output compare mode (generating pulses)
+ */
 inline void CCP2_vIsr(void)
 {
    if (PIR2bits.CCP2IF)
    {
        if ( (CCP2CON & 0b00001111) == 0b00001000 ) // if previous mode was "compare, set output on match"
        {
-           // calculate switch off time as value relative to current TIMER1 value (16 bit arithmetic with wrap around)
+            // set mode "compare, clear output on match"
+            // calculate switch off time as value relative to current TIMER1 value (16 bit arithmetic with wrap around)
             CCP2_vSetWhenT1 (0, (unsigned int)T1_uiGet() + (unsigned int)TRIAC_GATE_PULSE_LEN_T1_CYCLES); // stop generating pulse after
        }
        else
@@ -86,9 +90,9 @@ inline void T1_vIsr(void)
 }
 
 /**
- * set of timer registers
+ * set timer1 registers to given value
  * NOTE: timer1 is stopped during set
- * @param uiVal
+ * @param uiVal - 16 bit value to be written into TMR1H and TMR1L
  */
 inline void T1_vSet(unsigned int uiVal)
 {
@@ -99,13 +103,34 @@ inline void T1_vSet(unsigned int uiVal)
 }
 
 /**
- * Read Timer1 value
+ * Read Timer1 value and return 16bit value
  *
- * @param uiVal
+ * Timer 1 overflow can occur between reading two 8 bit registers
  */
 inline unsigned int T1_uiGet(void)
 {
-    return (TMR1H << 8 | TMR1L);
+#if 1
+    // Microchip proposed method of safe reading of running Timer1
+    unsigned char ucHI, ucLO;
+    ucHI = TMR1H;
+    ucLO = TMR1L;
+    if (TMR1H != ucHI)
+    {
+        // overflow occurs. reread values
+        ucHI = TMR1H;
+        ucLO = TMR1L;
+    }
+    return ucLO | (ucHI << 8);
+    
+#else
+    unsigned int uiT1;
+
+    // reding in steps to ensure reading order
+    uiT1  = TMR1L;
+    uiT1 |= TMR1H << 8;
+
+    return uiT1;
+#endif
 }
 
 /**
@@ -151,7 +176,7 @@ inline void CCP1_vInit(void)
  */
 inline void CCP2_vInitAndDisable(void)
 {
-    // disable interrupt on CCP2 (false int gan be genrated when mode is changed)
+    // disable interrupt on CCP2 (false int can be generated when mode is changed)
     PIE2bits.CCP2IE = 0;
     CCP2CONbits.CCP2M3 = 0;
     CCP2CONbits.CCP2M2 = 0;
