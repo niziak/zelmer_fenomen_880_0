@@ -16,30 +16,8 @@
 #include "timer1_engine_rpm.h"
 #include "ext_int.h"
 #include "key.h"
+#include "equipment.h"
 
-
-/**
- *                                   MCLR 01 #####   ##### 28 RB7 ICSP DAT ---> 7 seg
- *            Hall Cover ----------> RA0  02 ############# 27 RB6 ICSP CLD ---> 7 seg & 2 color LED Anode
- *            Hall 3 --------------> RA1  03 ############# 26 RB5 ------------> 7 seg
- *            Hall 1 --------------> RA2  04 ############# 25 RB4 ------------> 7 seg
- *            Hall 2 --------------> RA3  05 ############# 24 RB3 ------------> 7 seg & 2 color LED Anode
- * Upper key row(L when press) ----> RA4  06 ############# 23 RB2 ------------> 7 seg
- *           Relay <---------------- RA5  07 ############# 22 RB1 ------------> 7 seg
- *                               [-] Vss  08 ############# 21 RB0 INT <------- 0/5 V 50Hz cycle from mains (when absent - overheat)
- *                           XT ---- RA7  09 ############# 20 Vdd [+]
- *                           XT ---- RA6  10 ############# 19 Vss [-]
- *        2 color LED common K  <--- RC0  11 ############# 18 RC7 ------------> 7 seg dot
- *             Triac gate <---- CCP2 RC1  12 ############# 17 RC6 ------------> power for hall H3 and hall HC
- *             Enigne RPM ----> CCP1 RC2  13 ############# 16 RC5 ------------> 7 seg 1st display plus to Anode + [-] Key (active low)
- * Lower key row L when press) ----> RC3  14 ############# 15 RC4 ------------> 7 seg 2nd display plus to Anode + [+] Key (active low
- *
- * All hall sensors in idle gives 5V, when magnet is detected voltage drops to zero.
- *
- * Common anode of seven segments display is driven by PNP tranistor, so displays are activated using LOW state.
- *
- * Enigne RPM are 2 positive pulses per rotation. So it is good to measure time between rising edges.
- */
 
 
 volatile unsigned char   bEngineOn;             ///< enable engine power and disable engine brake
@@ -82,6 +60,11 @@ void vChangeSpeedStep(void)
     }
 }
 
+/**
+ * Recalulate system state:
+ *  - soft start / soft stop
+ *  - handle pulse / autopulse counters
+ */
 void vUpdateSystemState(void)
 {
         /////////////////////////////////////////
@@ -116,19 +99,8 @@ void vUpdateSystemState(void)
             }
         }
 
-        // check overheat condition
-#if (CONFIG_CHECK_OVERHEAT)
-        if (ucEINTGap > EINT_EXPECTED_T0_OV_CYCLES)
-        {
-            bOverheat = 1;
-        }
-        else
-#endif
-        {
-            bOverheat = 0;
-            ucEINTGap++;
-        }
-        // check equipment
+
+
 }
 
 void vUpdateDisplay(void)
@@ -161,8 +133,6 @@ void vUpdateDisplay(void)
             stDisp.bLedBlink = 1;
             LED_Disp (SEG_H, SEG_E);
         }
-
-        acDispContent[0] = (PORTA & 0x0F);
 }
 
 /**
@@ -171,10 +141,25 @@ void vUpdateDisplay(void)
  *
  * Engine is stopped by stoping generation of gating pulse to triac,
  * without touching engine relay
+ *
+ * Overheat is also checked here
  */
 void vStartStopEngine(void)
 {
-    
+        // check overheat condition
+#if (CONFIG_CHECK_OVERHEAT)
+        if (ucEINTGap > EINT_EXPECTED_T0_OV_CYCLES)
+        {
+            bOverheat = 1;
+        }
+        else
+#endif
+        {
+            bOverheat = 0;
+            ucEINTGap++;
+        }
+
+
         if (    ( 0 == bOverheat )
              && ( 1 == bGoodEq   )
              && ( 0 == bWrongEq  )
@@ -202,8 +187,8 @@ void vStartStopEngine(void)
 }
 
 void main(void) {
-    bGoodEq = 1; //TODO
-    bWrongEq = 0; //TODO
+    bGoodEq = 0;
+    bWrongEq = 1;
     ucSelectedEngineSpeed = MIN_ENGINE_SPEED;
     
     TRISA = TRISB = TRISC = 0xFF; // as inputs (safe to start)
@@ -228,7 +213,7 @@ void main(void) {
     TRISCbits.TRISC1 = 0; // C5 as output - triac gate
 
     TRISCbits.TRISC6 = 0; // C6 as output - power for hall sensors
-    PORTCbits.RC6 = 1;    // enable hall power
+    PORTCbits.RC6 = 0;    // disable H3 and HC power
 
     EINT_vInit();
     T0_vInit();
@@ -250,8 +235,11 @@ void main(void) {
             
             vScanKeyAndHandle();
             vUpdateSystemState();
+            vUpdateEquipmentState();
             vStartStopEngine();
             vUpdateDisplay();
+
+            vDebugEquipmentState();
 
     }
     return;
