@@ -24,7 +24,7 @@ CLEAN_SUBPROJECTS=${CLEAN_SUBPROJECTS_${SUBPROJECTS}}
 
 
 # Project Name
-PROJECTNAME=zelmer_fenomen.X
+PROJECTNAME=zelmer
 
 # Active Configuration
 DEFAULTCONF=default

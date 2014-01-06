@@ -13,7 +13,7 @@
 
 void vDebugEquipmentState(void)
 {
-          acDispContent[0] = ~(PORTA & 0x0F);
+          acDispContent[0] = (~PORTA & 0x0F);
 }
 
 void vUpdateEquipmentState(void)

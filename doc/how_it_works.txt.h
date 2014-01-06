@@ -13,13 +13,14 @@
  *          powered from RC6 MCU port
  *
  * Sensors and equipment mapping:
+ *     8    4
  *  | H1 | H2 | check H3 & HC | H3 | HC | speed |
  *  +----+----+---------------+----+----+-------+
- *  | X  |    |    check      |    |  X |  6
- *  |    |  X |    check      |  X |    |  10
- *  | X  |    |    check      |  X |    |  12
- *  |    |  X |    check      |    |  X |  Err
- *  |    |  X |    check      |    |    |
+ *  | X  |    |    check HC   |    |  X |  6    | ? potato
+ *  | X  |    |    check H3   |  X |    |  12   | blender
+ *  |    |  X |    check HC   |    |  X |       | slicer
+ *  |    |  X |    check H3   |  X |    |  10   | juice maker
+ *  | X  |  X |    check HC   |    |  X |       | mixer
  *
  *
  *
@@ -50,8 +51,8 @@
  *                                   MCLR 01 #####   ##### 28 RB7 ICSP DAT ---> 7 seg
  *   [PCB 7]  ---------------------> RA0  02 ############# 27 RB6 ICSP CLD ---> 7 seg & 2 color LED Anode
  *   [PCB 9]  Hall 3 --------------> RA1  03 ############# 26 RB5 ------------> 7 seg
- *            Hall 1 --------------> RA2  04 ############# 25 RB4 ------------> 7 seg
- *            Hall 2 --------------> RA3  05 ############# 24 RB3 ------------> 7 seg & 2 color LED Anode
+ *            Hall 2 --------------> RA2  04 ############# 25 RB4 ------------> 7 seg
+ *            Hall 1 --------------> RA3  05 ############# 24 RB3 ------------> 7 seg & 2 color LED Anode
  * Upper key row(L when press) ----> RA4  06 ############# 23 RB2 ------------> 7 seg
  *           Relay <---------------- RA5  07 ############# 22 RB1 ------------> 7 seg
  *                               [-] Vss  08 ############# 21 RB0 INT <------- 0/5 V 50Hz cycle from mains (when absent - overheat)
