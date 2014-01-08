@@ -14,13 +14,14 @@
  *
  * Sensors and equipment mapping:
  *     8    4
- *  | H1 | H2 | check H3 & HC | H3 | HC | speed |
- *  +----+----+---------------+----+----+-------+
- *  | X  |    |    check HC   |    |  X |  6    | ? potato
- *  | X  |    |    check H3   |  X |    |  12   | blender
- *  |    |  X |    check HC   |    |  X |       | slicer
- *  |    |  X |    check H3   |  X |    |  10   | juice maker
- *  | X  |  X |    check HC   |    |  X |       | mixer
+ *  | H1 | H2 | check H3 & HC | H3 | HC | def.  | speed |
+ *  |    |    |               |    |    | speed | range |
+ *  +----+----+---------------+----+----+-------+-------+
+ *  | X  |    |    check HC   |    |  X |  1    |       | ? potato
+ *  | X  |    |    check H3   |  X |    |  12   | 6..12 | blender
+ *  |    |  X |    check HC   |    |  X |  6    | 1..12 | slicer
+ *  |    |  X |    check H3   |  X |    |  10   |       | juice maker
+ *  | X  |  X |    check HC   |    |  X |       | 1..6  | mixer
  *
  *
  *
