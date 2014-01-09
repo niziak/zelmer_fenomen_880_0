@@ -33,29 +33,6 @@
 #include "timer1_engine_rpm.h"
 #include "config.h"
 
-/**
- * Engine speed defined as delay in Timer1 ticks after zero-crossing
- *
- * at 8111 engine is only buzzing, 7333 is ok for lowest possible but not usable
- */
-#define DELAY_ZC(x)     ((x)*T1_CYCLES_FOR_US),
-
-
-unsigned int auiSpeedTable[12] =
-{
-    DELAY_ZC(7000)
-    DELAY_ZC(6611)
-    DELAY_ZC(6222)
-    DELAY_ZC(5889)
-    DELAY_ZC(5556)
-    DELAY_ZC(5278)
-    DELAY_ZC(4944)
-    DELAY_ZC(4611)
-    DELAY_ZC(4278)
-    DELAY_ZC(3944)
-    DELAY_ZC(3611)
-    DELAY_ZC(3278)
-};
 
 /**
  * External interrupt handler. EINT is generated when zero crossing occurs.
@@ -81,7 +58,9 @@ inline void EINT_vIsr(void)
         if (bTriacOn)
         {
             // calculate switch on time as value relative to current TIMER1 value (16 bit arithmetic with wrap around)
-            CCP2_vSetWhenT1(1, (unsigned int)T1_uiGet() + (auiSpeedTable[ucCurrentEngineSpeed-1]) ); // generate triac pulse after delay time
+            //CCP2_vSetWhenT1(1, (unsigned int)T1_uiGet() + (auiSpeedTable[ucCurrentEngineSpeed-1]) ); // generate triac pulse after delay time
+            CCP2_vSetWhenT1(1, (unsigned int)T1_uiGet() + (unsigned int)uiCurrentTriacDelayInT1 ); // generate triac pulse after delay time
+
         }
         else
         {

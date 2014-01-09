@@ -33,8 +33,8 @@
  *  |__   |           |  | |__|  |__  |__| |__   |
  *
  *   __
- *  |__|  |__|
- *  |     |  |
+ *  |__|  |__|  |
+ *  |     |  |  |__
  *
  * 
  * LED Segments to port bits mapping (active LOW):
@@ -74,6 +74,7 @@ SEG_CHAR_DEF(   SEG_F,           (0b11010010)       )   /* F */
 SEG_CHAR_DEF(   SEG_R,           (0b10000010)       )   /* r */
 SEG_CHAR_DEF(   SEG_P,           (0b11110010)       )   /* P */
 SEG_CHAR_DEF(   SEG_H,           (0b11100110)       )   /* H */
+SEG_CHAR_DEF(   SEG_L,           (0b11001000)       )   /* L */
 /*                                  EFBADCGx                 */
 SEG_CHAR_DEF(   SEG_NONE,        (0b00000000)       )   /* display off */
 

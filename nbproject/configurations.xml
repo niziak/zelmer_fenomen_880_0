@@ -37,7 +37,6 @@
                    projectFiles="false">
       <itemPath>Makefile</itemPath>
     </logicalFolder>
-    <itemPath>doc/how_it_works.txt</itemPath>
   </logicalFolder>
   <sourceRootList>
     <Elem>doc</Elem>

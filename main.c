@@ -20,13 +20,15 @@
 
 
 
-volatile unsigned char   bEngineOn;             ///< enable engine power and disable engine brake
-volatile unsigned char   bTriacOn;              ///< permits EINT and CCP2 module generate gating pulses
-volatile unsigned char   bOverheat;             ///< engine overheat
-volatile unsigned char   bWrongEq;              ///< wrong equipment (sensors broken?)
-volatile unsigned char   bGoodEq;               ///< equipment are valid and close (possible to turn on engine)
-volatile unsigned char   ucSelectedEngineSpeed; ///< variable to keep user selected speed 0..12
-volatile unsigned char   ucCurrentEngineSpeed;  ///< variable to keep user selected speed 0..12
+volatile unsigned char   bEngineOn;                 ///< enable engine power and disable engine brake
+volatile unsigned char   bTriacOn;                  ///< permits EINT and CCP2 module generate gating pulses
+volatile unsigned char   bOverheat;                 ///< engine overheat
+volatile unsigned char   bWrongEq;                  ///< wrong equipment (sensors broken?)
+volatile unsigned char   bGoodEq;                   ///< equipment are valid and close (possible to turn on engine)
+volatile unsigned char   ucSelectedEngineSpeed;     ///< variable to keep user selected speed 0..12
+//volatile unsigned char   ucCurrentEngineSpeed;      ///< variable to keep user selected speed 0..12
+volatile unsigned int    uiCurrentTriacDelayInT1;   ///< current triac pulse delay from ZC in ticks of T1 timer
+volatile unsigned int    uiDesiredTriacDelayInT1;   ///< desired (by user) triac pulse delay from ZC in ticks of T1 timer
 
 volatile unsigned int    uiOnePulseCountdown;   ///<
 volatile unsigned char   bMainTrigger;          ///< T0 trigger for main loop (active when 0)
@@ -48,17 +50,40 @@ void interrupt myIsr(void)
 
 void vChangeSpeedStep(void)
 {
-    // spinning up
-    if (ucCurrentEngineSpeed < ucSelectedEngineSpeed)
+    // spinning down - increasing delay - reducing power
+    if (uiCurrentTriacDelayInT1 < uiDesiredTriacDelayInT1)
     {
-        ucCurrentEngineSpeed++;
+        uiCurrentTriacDelayInT1++;
     }
-    //spinning down
-    if (ucCurrentEngineSpeed > ucSelectedEngineSpeed)
+    //spinning up - decreasing delay - increasing power
+    if (uiCurrentTriacDelayInT1 > uiDesiredTriacDelayInT1)
     {
-        ucCurrentEngineSpeed--;
+        uiCurrentTriacDelayInT1--;
     }
 }
+
+
+/**
+ * Engine speed defined as delay in Timer1 ticks after zero-crossing
+ *
+ */
+
+const unsigned int auiSpeedTable[12] =
+{
+    DELAY_ZC_01 ,
+    DELAY_ZC_02 ,
+    DELAY_ZC_03 ,
+    DELAY_ZC_04 ,
+    DELAY_ZC_05 ,
+    DELAY_ZC_06 ,
+    DELAY_ZC_07 ,
+    DELAY_ZC_08 ,
+    DELAY_ZC_09 ,
+    DELAY_ZC_10 ,
+    DELAY_ZC_11 ,
+    DELAY_ZC_12 ,
+};
+
 
 /**
  * Recalulate system state:
@@ -67,10 +92,9 @@ void vChangeSpeedStep(void)
  */
 void vUpdateSystemState(void)
 {
+        uiDesiredTriacDelayInT1 = auiSpeedTable[ucSelectedEngineSpeed-1];
         /////////////////////////////////////////
-        // update system state
-
-
+        // soft start
         if (ucSpeedStepChangeTimer > 0)
         {
                 ucSpeedStepChangeTimer--;
@@ -80,7 +104,7 @@ void vUpdateSystemState(void)
                 }
         }
         
-        if (ucCurrentEngineSpeed != ucSelectedEngineSpeed)
+        if (uiCurrentTriacDelayInT1 != uiDesiredTriacDelayInT1)
         {
             if (ucSpeedStepChangeTimer == 0)
             {
@@ -88,7 +112,7 @@ void vUpdateSystemState(void)
             }
         }
 
-        
+        /////////////////////////////////////////
         // decrement autopulse counter
         if (uiOnePulseCountdown>0)
         {
@@ -129,9 +153,10 @@ void vUpdateDisplay(void)
 
         if (bOverheat)
         {
+            stDisp.bLedGreen = 0;
             stDisp.bLedRed = 1;
             stDisp.bLedBlink = 1;
-            LED_Disp (SEG_H, SEG_E);
+            LED_Disp (SEG_H, SEG_NONE);
         }
 }
 
@@ -176,13 +201,14 @@ void vStartStopEngine(void)
                  || ( 0 == bGoodEq  ) )
             {
                 ENGINE_RELAY_OFF //TODO disable relay also when engine is gently stopped
+                ucSelectedEngineSpeed = 1; // after emergency break, start from lowest speed //TODO min and max speed limits from equipment
             }
 
             stDisp.bDec2 = 0;
             bEngineOn = 0;  // delete user choice to turn engine on
             bTriacOn = 0;
             CCP2_vInitAndDisable(); // will call TRIAC_OFF macro
-            ucCurrentEngineSpeed = MIN_ENGINE_SPEED; // always start from lowest speed
+            uiCurrentTriacDelayInT1 = DELAY_ZC_01; // always start from lowest speed
         }
 }
 
@@ -218,14 +244,18 @@ void main(void) {
     EINT_vInit();
     T0_vInit();
 
-//    CCP1_vInit();
+    CCP1_vInit();
     CCP2_vInitAndDisable();
     T1_vInit();
     
     ei();   // global interrupt enable
 
-    LED_Disp (SEG_H, SEG_1);
-    delay_ms(1000);
+    LED_Disp (SEG_NONE, SEG_H); delay_ms(500);
+    LED_Disp (SEG_H,    SEG_E); delay_ms(500);
+    LED_Disp (SEG_E,    SEG_L); delay_ms(500);
+    LED_Disp (SEG_L,    SEG_0); delay_ms(500);
+    LED_Disp (SEG_0, SEG_NONE); delay_ms(500);
+
 
     while (1)
     {
@@ -239,8 +269,9 @@ void main(void) {
             vStartStopEngine();
             vUpdateDisplay();
 
-            vDebugEquipmentState();
+            //vDebugEquipmentState();
 
+            LED_DispHex ( ((unsigned int)(uiPrevT1Val - uiCurrT1Val)) >> 8); // show MSB
     }
     return;
 }

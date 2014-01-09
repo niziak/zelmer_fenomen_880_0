@@ -24,8 +24,6 @@
  * 
  */
 
-//TODO check for timer1 OV without CCP1 - means engine stuck
-
 volatile unsigned int uiPrevT1Val;
 volatile unsigned int uiCurrT1Val;
 
@@ -42,20 +40,18 @@ inline void CCP1_vIsr(void)
 {
    if (PIR1bits.CCP1IF)
    {
-//       TMR1H = 0;
-//       TMR1L = 0;
-//       uiPrevT1Val  = uiCurrT1Val;
-//       uiCurrT1Val  = CCPR1H << 8 | CCPR1L;
-//
-//       if (stDisp.bDec2)
-//       {
-//           stDisp.bDec2 = 0;
-//       }
-//       else
-//       {
-//           stDisp.bDec2 = 1;
-//       }
-//       PIR1bits.CCP1IF = 0;
+       uiPrevT1Val  = uiCurrT1Val;
+       uiCurrT1Val  = CCPR1H << 8 | CCPR1L;
+
+       if (stDisp.bDec2)
+       {
+           stDisp.bDec2 = 0;
+       }
+       else
+       {
+           stDisp.bDec2 = 1;
+       }
+       PIR1bits.CCP1IF = 0;
    }
 
 }
@@ -164,7 +160,7 @@ inline void CCP1_vInit(void)
     // CCP1 Initialisation
     // configure Capture mode on every rising edge odf CCP1 pin, no prescaler
     CCP1CONbits.CCP1M2 = 1;
-    CCP1CONbits.CCP1M0 = 1;
+    CCP1CONbits.CCP1M0 = 0; // 1-rising 0-falling
 
     PIR1bits.CCP1IF = 0; // clear interrupt flag
     PIE1bits.CCP1IE = 1; // enable interrupt on CCP1 event
