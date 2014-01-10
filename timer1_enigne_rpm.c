@@ -42,15 +42,16 @@ inline void CCP1_vIsr(void)
    {
        uiPrevT1Val  = uiCurrT1Val;
        uiCurrT1Val  = CCPR1H << 8 | CCPR1L;
-
-       if (stDisp.bDec2)
+#if CONFIG_SHOW_RPM_PULSE_ON_DOT
+       if (stDisp.bDec1)
        {
-           stDisp.bDec2 = 0;
+           stDisp.bDec1 = 0;
        }
        else
        {
-           stDisp.bDec2 = 1;
+           stDisp.bDec1 = 1;
        }
+#endif
        PIR1bits.CCP1IF = 0;
    }
 
@@ -79,10 +80,20 @@ inline void CCP2_vIsr(void)
 
 inline void T1_vIsr(void)
 {
-//   if (PIR1bits.TMR1IF)
-//   {
-//       PIR1bits.TMR1IF = 0;
-//   }
+   if (PIR1bits.TMR1IF)
+   {
+#if CONFIG_SHOW_T1_OV_ON_DOT
+       if (stDisp.bDec1)
+       {
+           stDisp.bDec1 = 0;
+       }
+       else
+       {
+           stDisp.bDec1 = 1;
+       }
+#endif
+       PIR1bits.TMR1IF = 0;
+   }
 }
 
 /**
@@ -136,15 +147,16 @@ inline void T1_vInit(void)
 {
     //TIMER 1 initialisation (generated from: http://eng-serve.com/pic/pic_timer.html)
     //Timer1 Registers Prescaler= 1 - TMR1 Preset = 0 - Freq = 15.26 Hz - Period = 0.065536 seconds
-    T1CONbits.T1CKPS1 = 0;   // bits 5-4  Prescaler Rate Select bits
-    T1CONbits.T1CKPS0 = 0;   // bit 4
-    T1CONbits.T1OSCEN = 0;   // bit 3 Timer1 Oscillator Enable Control bit 0 = off
+    T1CONbits.T1CKPS1 = 0;   // bits 5-4  Prescaler Rate Select bits 1:2
+    T1CONbits.T1CKPS0 = 1;   // bit 4       (00=1:1 01=1:2 10=1:4 11=1:8)
+    
+    T1CONbits.T1OSCEN = 0;   // bit 3 Timer1 External Oscillator Enable Control bit 0 = off
     T1CONbits.T1SYNC = 1;    // bit 2 Timer1 External Clock Input Synchronization Control bit...1 = Do not synchronize external clock input
     T1CONbits.TMR1CS = 0;    // bit 1 Timer1 Clock Source Select bit...0 = Internal clock (FOSC/4)
     T1CONbits.TMR1ON = 1;    // bit 0 enables timer
     TMR1H = 0;               // preset for timer1 MSB register
     TMR1L = 0;               // preset for timer1 LSB register
-    //PIE1bits.TMR1IE = 1;     // enable Timer1 overflow int
+    PIE1bits.TMR1IE = 1;     // enable Timer1 overflow int
     PIR1bits.TMR1IF = 0;     // clear Timer1 INT flag
 
     INTCONbits.PEIE = 1; // enable peripheral interrupts (to get TIMER1 overflow int)

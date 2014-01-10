@@ -24,7 +24,9 @@ void vUpdateEquipmentState(void)
     if (CHECK_H1 || CHECK_H2)
     {
         ENABLE_H3
-        bGoodEq = 1;
+        {
+            bGoodEq = 1;
+        }
     }
     else
     {

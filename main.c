@@ -255,7 +255,7 @@ void main(void) {
     LED_Disp (SEG_E,    SEG_L); delay_ms(500);
     LED_Disp (SEG_L,    SEG_0); delay_ms(500);
     LED_Disp (SEG_0, SEG_NONE); delay_ms(500);
-
+    LED_Disp (SEG_NONE, SEG_NONE); delay_ms(500);
 
     while (1)
     {
@@ -272,6 +272,7 @@ void main(void) {
             //vDebugEquipmentState();
 
             LED_DispHex ( ((unsigned int)(uiPrevT1Val - uiCurrT1Val)) >> 8); // show MSB
+            //LED_DispHex ( T1_uiGet() >> 8); // show MSB
     }
     return;
 }

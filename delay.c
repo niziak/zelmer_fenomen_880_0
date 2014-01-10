@@ -1,7 +1,10 @@
 
 #include <xc.h>
-#include <htc.h>
-#define _XTAL_FREQ 4000000
+//#include <htc.h>
+#include "config.h"
+#ifndef _XTAL_FREQ
+#error "Please define _XTAL_FREQ in config.h file"
+#endif
 
 void delay_ms(unsigned int uiDelayMs)
 {
