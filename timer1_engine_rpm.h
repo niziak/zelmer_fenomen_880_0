@@ -24,8 +24,6 @@ extern inline void CCP2_vInitAndDisable(void);
 extern inline void CCP2_vIsr(void);
 extern inline void CCP2_vSetWhenT1(unsigned char bState, unsigned int uiExpectedT1Value);
 
-extern volatile unsigned int uiPrevT1Val;
-extern volatile unsigned int uiCurrT1Val;
 
 
 

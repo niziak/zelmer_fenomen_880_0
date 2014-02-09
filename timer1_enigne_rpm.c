@@ -1,5 +1,6 @@
 #include <xc.h>
 #include "config.h"
+#include "globals.h"
 #include "led_seg.h"
 #include "timer1_engine_rpm.h"
 
@@ -24,11 +25,6 @@
  * 
  */
 
-volatile unsigned int uiPrevT1Val;
-volatile unsigned int uiCurrT1Val;
-
-
-
 
 
 /**
@@ -38,10 +34,17 @@ volatile unsigned int uiCurrT1Val;
  */
 inline void CCP1_vIsr(void)
 {
+   static volatile unsigned int     uiRPMPrevT1Val;
+   unsigned int                     uiRPMOptoCurrT1Val;
+   
    if (PIR1bits.CCP1IF)
    {
-       uiPrevT1Val  = uiCurrT1Val;
-       uiCurrT1Val  = CCPR1H << 8 | CCPR1L;
+       uiRPMOptoCurrT1Val  = CCPR1H << 8 | CCPR1L;
+
+       uiTachoCurrentValue = uiRPMPrevT1Val - uiRPMOptoCurrT1Val;
+       uiRPMPrevT1Val  = uiRPMOptoCurrT1Val;
+       bNewTachoValue = TRUE;
+       
 #if CONFIG_SHOW_RPM_PULSE_ON_DOT
        if (stDisp.bDec1)
        {

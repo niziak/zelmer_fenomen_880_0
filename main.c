@@ -10,6 +10,7 @@
 #include "conf_bits.h"
 
 #include "config.h"
+#include "globals.h"
 #include "led_seg.h"
 #include "delay.h"
 #include "timer0_led_key.h"
@@ -20,18 +21,7 @@
 
 
 
-volatile unsigned char   bEngineOn;                 ///< enable engine power and disable engine brake
-volatile unsigned char   bTriacOn;                  ///< permits EINT and CCP2 module generate gating pulses
-volatile unsigned char   bOverheat;                 ///< engine overheat
-volatile unsigned char   bWrongEq;                  ///< wrong equipment (sensors broken?)
-volatile unsigned char   bGoodEq;                   ///< equipment are valid and close (possible to turn on engine)
-volatile unsigned char   ucSelectedEngineSpeed;     ///< variable to keep user selected speed 0..12
-//volatile unsigned char   ucCurrentEngineSpeed;      ///< variable to keep user selected speed 0..12
-volatile unsigned int    uiCurrentTriacDelayInT1;   ///< current triac pulse delay from ZC in ticks of T1 timer
-volatile unsigned int    uiDesiredTriacDelayInT1;   ///< desired (by user) triac pulse delay from ZC in ticks of T1 timer
 
-volatile unsigned int    uiOnePulseCountdown;   ///<
-volatile unsigned char   bMainTrigger;          ///< T0 trigger for main loop (active when 0)
 static unsigned char     ucSpeedStepChangeTimer;
 
 /**
@@ -48,41 +38,77 @@ void interrupt myIsr(void)
     T0_vIsr();
 }
 
-void vChangeSpeedStep(void)
+/**
+ * Engine speed defined as expected opto sensor pulse interval measured in T1 ticks
+ *
+ */
+const unsigned int auiTachoLockValuesForSpeed[12] =
 {
-    // spinning down - increasing delay - reducing power
-    if (uiCurrentTriacDelayInT1 < uiDesiredTriacDelayInT1)
+    0xE000,
+    0xE200,
+    0xE400,
+    0xE600,
+    0xE800,
+    0xEA00,
+    0xEC00,
+    0xEE00,
+    0xF100,
+    0xF300,
+    0xF500,
+    0xF700,
+};
+
+
+#define INCREASE_SPEED(x)  {uiCurrentTriacDelayInT1 -= x;}
+#define DECREASE_SPEED(x)  {uiCurrentTriacDelayInT1 += x;}
+
+void vStabiliseSpeed(void)
+{
+    unsigned int uiError;
+    unsigned int uiCorrection;
+    
+    
+
+    // change one speed up/down means change (in uiError) by 0x200 = 512
+    uiError = uiTachoLockValue - uiTachoCurrentValue;
+    uiCorrection = 1;
+    //uiCorrection = 10 + (uiError>>4);   // uiError/8
+
+    #if CONFIG_SHOW_RPM_STABIL_ON_DOTS
+        stDisp.bDec2 = 0;
+        stDisp.bDec1 = 0;
+    #endif
+
+    // if RPM is lower than required
+    if (uiTachoCurrentValue > uiTachoLockValue)
     {
-        uiCurrentTriacDelayInT1++;
+        DECREASE_SPEED(uiCorrection);
+        #if CONFIG_SHOW_RPM_STABIL_ON_DOTS
+            stDisp.bDec1 = 1;
+        #endif
     }
-    //spinning up - decreasing delay - increasing power
-    if (uiCurrentTriacDelayInT1 > uiDesiredTriacDelayInT1)
+    else
+    // if RPM is higher than required
+    if (uiTachoCurrentValue < uiTachoLockValue)
     {
-        uiCurrentTriacDelayInT1--;
+        INCREASE_SPEED(uiCorrection);
+        #if CONFIG_SHOW_RPM_STABIL_ON_DOTS
+            stDisp.bDec2 = 1;
+        #endif
+    }
+
+    // check minimum and maximum allowed values
+    if (uiCurrentTriacDelayInT1 > DELAY_ZC_LOWEST_POWER)
+    {
+        uiCurrentTriacDelayInT1 = DELAY_ZC_LOWEST_POWER;
+    }
+    if (uiCurrentTriacDelayInT1 < DELAY_ZC_HIGHEST_POWER)
+    {
+        uiCurrentTriacDelayInT1 = DELAY_ZC_HIGHEST_POWER;
     }
 }
 
 
-/**
- * Engine speed defined as delay in Timer1 ticks after zero-crossing
- *
- */
-
-const unsigned int auiSpeedTable[12] =
-{
-    DELAY_ZC_01 ,
-    DELAY_ZC_02 ,
-    DELAY_ZC_03 ,
-    DELAY_ZC_04 ,
-    DELAY_ZC_05 ,
-    DELAY_ZC_06 ,
-    DELAY_ZC_07 ,
-    DELAY_ZC_08 ,
-    DELAY_ZC_09 ,
-    DELAY_ZC_10 ,
-    DELAY_ZC_11 ,
-    DELAY_ZC_12 ,
-};
 
 
 /**
@@ -92,25 +118,26 @@ const unsigned int auiSpeedTable[12] =
  */
 void vUpdateSystemState(void)
 {
-        uiDesiredTriacDelayInT1 = auiSpeedTable[ucSelectedEngineSpeed-1];
+        uiTachoLockValue = auiTachoLockValuesForSpeed[ucSelectedEngineSpeed-1];
+        
         /////////////////////////////////////////
         // soft start
-        if (ucSpeedStepChangeTimer > 0)
-        {
-                ucSpeedStepChangeTimer--;
-                if (ucSpeedStepChangeTimer == 0)
-                {
-                    vChangeSpeedStep();
-                }
-        }
-        
-        if (uiCurrentTriacDelayInT1 != uiDesiredTriacDelayInT1)
-        {
-            if (ucSpeedStepChangeTimer == 0)
-            {
-                ucSpeedStepChangeTimer = SPEED_CHANGE_STEP_INTERVAL_IN_T0_OV_CYCLES;
-            }
-        }
+//        if (ucSpeedStepChangeTimer > 0)
+//        {
+//                ucSpeedStepChangeTimer--;
+//                if (ucSpeedStepChangeTimer == 0)
+//                {
+//                    vChangeSpeedStep();
+//                }
+//        }
+//
+//        if (uiCurrentTriacDelayInT1 != uiDesiredTriacDelayInT1)
+//        {
+//            if (ucSpeedStepChangeTimer == 0)
+//            {
+//                ucSpeedStepChangeTimer = SPEED_CHANGE_STEP_INTERVAL_IN_T0_OV_CYCLES;
+//            }
+//        }
 
         /////////////////////////////////////////
         // decrement autopulse counter
@@ -190,7 +217,9 @@ void vStartStopEngine(void)
              && ( 0 == bWrongEq  )
              && ( 1 == bEngineOn ) )
         {
+#if CONFIG_SHOW_ON_OFF_ON_DOT
             stDisp.bDec2 = 1;
+#endif
             ENGINE_RELAY_ON
             bTriacOn = 1;
         }
@@ -203,8 +232,9 @@ void vStartStopEngine(void)
                 ENGINE_RELAY_OFF //TODO disable relay also when engine is gently stopped
                 ucSelectedEngineSpeed = 1; // after emergency break, start from lowest speed //TODO min and max speed limits from equipment
             }
-
+#if CONFIG_SHOW_ON_OFF_ON_DOT
             stDisp.bDec2 = 0;
+#endif
             bEngineOn = 0;  // delete user choice to turn engine on
             bTriacOn = 0;
             CCP2_vInitAndDisable(); // will call TRIAC_OFF macro
@@ -250,19 +280,29 @@ void main(void) {
     
     ei();   // global interrupt enable
 
-    LED_Disp (SEG_NONE, SEG_H); delay_ms(500);
-    LED_Disp (SEG_H,    SEG_E); delay_ms(500);
-    LED_Disp (SEG_E,    SEG_L); delay_ms(500);
-    LED_Disp (SEG_L,    SEG_0); delay_ms(500);
-    LED_Disp (SEG_0, SEG_NONE); delay_ms(500);
-    LED_Disp (SEG_NONE, SEG_NONE); delay_ms(500);
+    LED_Disp (SEG_NONE, SEG_H); delay_ms(HELLO_ANIMATION_DELAY_MS);
+    LED_Disp (SEG_H,    SEG_E); delay_ms(HELLO_ANIMATION_DELAY_MS);
+    LED_Disp (SEG_E,    SEG_L); delay_ms(HELLO_ANIMATION_DELAY_MS);
+    LED_Disp (SEG_L,    SEG_0); delay_ms(HELLO_ANIMATION_DELAY_MS);
+    LED_Disp (SEG_0, SEG_NONE); delay_ms(HELLO_ANIMATION_DELAY_MS);
+    LED_Disp (SEG_NONE, SEG_NONE); delay_ms(HELLO_ANIMATION_DELAY_MS);
 
     while (1)
     {
-        // wait for bMainTrigger to be ZERO
-        while (1 == bMainTrigger);
-            bMainTrigger = 1;
+        // wait for signal from ICP ISR
+        if (TRUE == bNewTachoValue)
+        {
+            vStabiliseSpeed();
+            bNewTachoValue = FALSE;
+        }
+        
+        // wait for signal from T0 ISR
+        if (TRUE == bMainTrigger)
+        {
+            bMainTrigger = FALSE;
+
             
+
             vScanKeyAndHandle();
             vUpdateSystemState();
             vUpdateEquipmentState();
@@ -271,8 +311,14 @@ void main(void) {
 
             //vDebugEquipmentState();
 
-            LED_DispHex ( ((unsigned int)(uiPrevT1Val - uiCurrT1Val)) >> 8); // show MSB
-            //LED_DispHex ( T1_uiGet() >> 8); // show MSB
+            #if CONFIG_SHOW_TACHO_MSB
+            LED_DispHex ( uiTachoCurrentValue >> 8); // show MSB
+            #endif
+            #if CONFIG_SHOW_TACHO_ERROR_MSB
+            LED_DispHex ( (uiTachoLockValue - uiTachoCurrentValue) >> 8);
+            #endif
+        }
+        
     }
     return;
 }

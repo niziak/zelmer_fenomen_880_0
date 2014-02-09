@@ -12,6 +12,7 @@
 #include <xc.h>
 #include "timer1_engine_rpm.h"
 #include "config.h"
+#include "globals.h"
 #include "led_seg.h"
 #include "key.h"
 #include "timer0_led_key.h"
@@ -32,7 +33,7 @@ inline void T0_vIsr(void)
 
     if (INTCONbits.T0IF)
     {
-        bMainTrigger = 0;
+        bMainTrigger = TRUE;
 
         ucBlinkState++;
         eSelectedColumn++;
