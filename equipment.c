@@ -1,5 +1,6 @@
 #include <xc.h>
 #include "config.h"
+#include "globals.h"
 #include "led_seg.h"
 
 #define CHECK_H1    (0 == PORTAbits.RA2)

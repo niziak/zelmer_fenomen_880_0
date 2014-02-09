@@ -52,20 +52,22 @@ extern "C" {
 #define DELAY_ZC(x)     (unsigned int)((x)*(T1_CYCLES_FOR_US))
 //#define DELAY_ZC(x)     ((T1_CYCLES_FOR_US_X10)*(x)/10)
 
-#define     DELAY_ZC_01     DELAY_ZC(7000)
-#define     DELAY_ZC_02     DELAY_ZC(6611)
-#define     DELAY_ZC_03     DELAY_ZC(6222)
-#define     DELAY_ZC_04     DELAY_ZC(5889)
-#define     DELAY_ZC_05     DELAY_ZC(5556)
-#define     DELAY_ZC_06     DELAY_ZC(5278)
-#define     DELAY_ZC_07     DELAY_ZC(4944)
-#define     DELAY_ZC_08     DELAY_ZC(4611)
-#define     DELAY_ZC_09     DELAY_ZC(4278)
-#define     DELAY_ZC_10     DELAY_ZC(3944)
-#define     DELAY_ZC_11     DELAY_ZC(3611)
-#define     DELAY_ZC_12     DELAY_ZC(3278)
+                                                // measured RPM in opto pulses (in T1 ticks)
+#define     DELAY_ZC_01     DELAY_ZC(7000)      // zimny: 0xBE 0xBF stabilnie C8 C9 C6
+#define     DELAY_ZC_02     DELAY_ZC(6611)      // 0xEC 0xED
+#define     DELAY_ZC_03     DELAY_ZC(6222)      // 0xF4 0xF5
+#define     DELAY_ZC_04     DELAY_ZC(5889)      // 0xF7
+#define     DELAY_ZC_05     DELAY_ZC(5556)      // 0xF8 0xF9
+#define     DELAY_ZC_06     DELAY_ZC(5278)      //
+#define     DELAY_ZC_07     DELAY_ZC(4944)      //
+#define     DELAY_ZC_08     DELAY_ZC(4611)      //
+#define     DELAY_ZC_09     DELAY_ZC(4278)      //
+#define     DELAY_ZC_10     DELAY_ZC(3944)      //
+#define     DELAY_ZC_11     DELAY_ZC(3611)      //
+#define     DELAY_ZC_12     DELAY_ZC(3278)      // 
 
-
+#define     DELAY_ZC_LOWEST_POWER       DELAY_ZC_01
+#define     DELAY_ZC_HIGHEST_POWER      DELAY_ZC_03
 
 
 
@@ -93,30 +95,27 @@ extern "C" {
 #define ENGINE_RELAY_ON                 { PORTAbits.RA5 = 1; };
 #define ENGINE_RELAY_OFF                { PORTAbits.RA5 = 0; };
 
-#define CONFIG_CHECK_OVERHEAT           1
+#define CONFIG_CHECK_OVERHEAT           1   ///< feature
+
+/** debug */
 #define CONFIG_SHOW_25HZ_ON_DOT         0   ///< change dot 1 state with every ext int
-#define CONFIG_SHOW_RPM_PULSE_ON_DOT    1   ///< change dot 1 state with every CCP1 int
-#define CONFIG_SHOW_T1_OV_ON_DOT        0   ///> change dot 1 state with every timer1 overflow
+#define CONFIG_SHOW_RPM_PULSE_ON_DOT    0   ///< change dot 1 state with every CCP1 int
+#define CONFIG_SHOW_T1_OV_ON_DOT        0   ///< change dot 1 state with every timer1 overflow
+#define CONFIG_SHOW_ON_OFF_ON_DOT       0   ///< second dot is showing on/off state
+#define CONFIG_SHOW_RPM_STABIL_ON_DOTS  1   ///< show when rpms are decremented (left dor) or incremented (right dot)
+#define CONFIG_SHOW_TACHO_MSB           0   ///< show MSB of measured tacho interval
+#define CONFIG_SHOW_TACHO_ERROR_MSB     1   ///<
 
-extern volatile unsigned char   bOverheat; 
-extern volatile unsigned char   bEngineOn;
-extern volatile unsigned char   bTriacOn;
-extern volatile unsigned char   bOverheat;
-extern volatile unsigned char   bWrongEq;
-extern volatile unsigned char   bGoodEq;
-extern volatile unsigned char   ucSelectedEngineSpeed;
-//extern volatile unsigned char   ucCurrentEngineSpeed;
-extern volatile unsigned int    uiCurrentTriacDelayInT1;   ///< current triac pulse delay from ZC in ticks of T1 timer
-extern volatile unsigned int    uiDesiredTriacDelayInT1;   ///< desired (by user) triac pulse delay from ZC in ticks of T1 timer
+#define HELLO_ANIMATION_DELAY_MS        350
 
-extern volatile unsigned int    uiOnePulseCountdown;       ///<
-extern volatile unsigned char   bMainTrigger;  
+
 
 #define BIN2BCD(a)  ( (((a) / 10) << 4) + ((a) % 10))
 
 #define ABS_DIFF(a,b) ((a) > (b) ? ((a) - (b)) : ((b) - (a))
 
-
+#define TRUE    (!0)
+#define FALSE   0
 
 
 #ifdef	__cplusplus

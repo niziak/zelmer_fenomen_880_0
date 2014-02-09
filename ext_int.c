@@ -32,6 +32,7 @@
 #include "timer0_led_key.h"
 #include "timer1_engine_rpm.h"
 #include "config.h"
+#include "globals.h"
 
 
 /**

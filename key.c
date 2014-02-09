@@ -27,6 +27,7 @@
  */
 #include <xc.h>
 #include "config.h"
+#include "globals.h"
 #include "key.h"
 #include "timer0_led_key.h"
 
