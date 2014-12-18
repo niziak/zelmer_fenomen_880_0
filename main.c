@@ -64,38 +64,96 @@ const unsigned int auiTachoLockValuesForSpeed[12] =
 
 void vStabiliseSpeed(void)
 {
-    unsigned int uiError;
-    unsigned int uiCorrection;
-    
-    
-
-    // change one speed up/down means change (in uiError) by 0x200 = 512
-    uiError = uiTachoLockValue - uiTachoCurrentValue;
-    uiCorrection = 1;
-    //uiCorrection = 10 + (uiError>>4);   // uiError/8
+    int iError;
+    static int iLastError;
+    static int iIntegral;       ///< sum of error
+    int iDerivative;
+    int iCorrection;
 
     #if CONFIG_SHOW_RPM_STABIL_ON_DOTS
         stDisp.bDec2 = 0;
         stDisp.bDec1 = 0;
     #endif
+    
 
-    // if RPM is lower than required
-    if (uiTachoCurrentValue > uiTachoLockValue)
+    // change one speed up/down means change (in uiError) by 0x200 = 512
+
+    // PID calculations
+
+    // Proportional part //
+    // iError/10 - hard speed up/down - stable oscillation: 1/4 sec
+    // iError/32 - soft unfinished oscilaltion: 1/2 sec
+    // iError/50 - very soft finished oscillations - stability reached after 7 seconds
+    #define CRITICAL_GAIN   1   ///< it is always 1 because @ref SCALE is calibrated to make oscillation
+    #define SCALE 32            ///< some empirical value which makes relation between tacho error and @ref uiCurrentTriacDelayInT1
+    
+    #define ONE_IS (100) /// to remove floating point - all values are represented in 1/100
+
+   
+    #define OSC_PERIOD  (1)    ///< dt = 1/2 sec = 
+    #define DT          (1)    ///< sample interval - for simplicity it is one now
+
+    #define P_FACTOR ((100)     * CRITICAL_GAIN)
+    #define I_FACTOR ((10)     * OSC_PERIOD)*0
+    #define D_FACTOR ((12)     * OSC_PERIOD)*0
+
+    //////////////////////////////////////////////////////////////////////
+    // Proportional term - make corrections proportional to error and error sign
+    iError = uiTachoLockValue - uiTachoCurrentValue;
+    //iError = iError / SCALE;
+
+
+    //////////////////////////////////////////////////////////////////////
+    // Integral term - sum of errors - so make error correction faster (overshoot possible) or remove error offset
+    //                 by accumulating small errors to bigger value. SHould be small to prevent overshoot but still possible
+    //                 to correct small errors in reasonable time
+    iIntegral += iError * DT; // TODO clear iIntegral when error is zero or zero crossing (to prevent overshoot)
+    if (iError == 0)
     {
-        DECREASE_SPEED(uiCorrection);
-        #if CONFIG_SHOW_RPM_STABIL_ON_DOTS
+        iIntegral = 0;
+    }
+    // if error changes sign
+    if (    ( (iError>0) && (iLastError<0) )
+         || ( (iError<0) && (iLastError>0) ) )
+    {
+        iIntegral = 0;
+    }
+
+
+    ///////////////////////////////////////////////////////////////////////
+    // Derivative term - slow down after a while to prevent overshoot
+    iDerivative = (iError - iLastError) / DT;
+    
+
+
+    iLastError = iError;
+
+    iCorrection  = iError      * P_FACTOR;
+    iCorrection += iIntegral   * I_FACTOR;
+    iCorrection += iDerivative * D_FACTOR;
+    
+    iCorrection /= ONE_IS; // rescale
+
+//TEMP:
+    iCorrection = iError;  // working reference - oscillating but works OK! iCorrection = iError / 32;
+
+    //if ((-1 > iError) || (iError > 1))
+    {
+        uiCurrentTriacDelayInT1 -= iCorrection / SCALE;
+    }
+
+    #if CONFIG_SHOW_RPM_STABIL_ON_DOTS
+        // if RPM is lower than required
+        if (uiTachoCurrentValue > uiTachoLockValue)
+        {
             stDisp.bDec1 = 1;
-        #endif
-    }
-    else
-    // if RPM is higher than required
-    if (uiTachoCurrentValue < uiTachoLockValue)
-    {
-        INCREASE_SPEED(uiCorrection);
-        #if CONFIG_SHOW_RPM_STABIL_ON_DOTS
+        }
+        else
+        if (uiTachoCurrentValue < uiTachoLockValue)
+        {
             stDisp.bDec2 = 1;
-        #endif
-    }
+        }
+    #endif
 
     // check minimum and maximum allowed values
     if (uiCurrentTriacDelayInT1 > DELAY_ZC_LOWEST_POWER)
